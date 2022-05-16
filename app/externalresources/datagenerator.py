@@ -2,9 +2,9 @@ from app.externalresources.reader_LokiCastle import ReaderLokiCastle
 
 
 class Datagenerator():
-    def __init__(self, id, constraints) -> None:
+    def __init__(self, id, parameters) -> None:
         self.id = id
-        self.constraints = constraints
+        self.parameters = parameters
 
         id_to_reader = {1: ReaderLokiCastle}
 

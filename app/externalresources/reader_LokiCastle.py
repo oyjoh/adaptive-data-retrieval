@@ -22,3 +22,6 @@ class ReaderLokiCastle(NetcdfReaderInterface):
 
     def plot_data(self):
         self.ds.isel().plot(robust=True)
+
+    def get_dataarray(self):
+        return(self.ds)
