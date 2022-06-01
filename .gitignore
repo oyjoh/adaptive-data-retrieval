@@ -2,6 +2,12 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,python,flask,macos,linux,git
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,python,flask,macos,linux,git
 
+### Local Credentials
+.env
+
+### NetCDF files
+*.nc
+
 ### Flask ###
 instance/*
 !instance/.gitignore
