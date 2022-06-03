@@ -21,7 +21,8 @@ class OpendapAccessCAS:
 
         self.ds = self.copernicusmarine_datastore()
 
-        self.file_size_MB = self.estimate_file_size() if file_size_MB is None else file_size_MB
+        self.file_size_MB = self.estimate_file_size(
+        ) if file_size_MB is None else file_size_MB
 
     def get_dataset(self):
         return self.ds
@@ -36,6 +37,9 @@ class OpendapAccessCAS:
         ds = xr.open_dataset(data_store)
 
         return ds
+    
+    
+
 
     # TODO: not robust, not smart
     def estimate_file_size(self):
@@ -48,16 +52,16 @@ class OpendapAccessCAS:
         estimate_MB = time_dim*file_size_MB
 
         return int(math.ceil(estimate_MB))
-    
-    def get_file_size(self):
+
+    def get_file_size_MB(self):
         return self.file_size_MB
 
 
 def debug():
     load_dotenv()
 
-    USERNAME = os.environ.get('USERNAME')
-    PASSWORD = os.environ.get('PASSWORD')
+    USERNAME = os.environ.get('CMEMS_CAS_USERNAME')
+    PASSWORD = os.environ.get('CMEMS_CAS_PASSWORD')
 
     if USERNAME == None or PASSWORD == None:
         print('please save credentials to .env')
@@ -66,9 +70,10 @@ def debug():
 
     url = 'https://nrt.cmems-du.eu/thredds/dodsC/METEOFRANCE-EUR-SST-L4-NRT-OBS_FULL_TIME_SERIE'
 
-    o_reader = OpendapAccessCAS(USERNAME, PASSWORD, url, cas_url)
+    o_reader = OpendapAccessCAS(
+        USERNAME, PASSWORD, url, cas_url, file_size_MB=500)
 
-    print(o_reader.file_size)
+    print(o_reader.ds)
 
 
 if __name__ == '__main__':

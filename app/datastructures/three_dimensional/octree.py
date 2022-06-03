@@ -1,4 +1,5 @@
 from functools import reduce
+from jinja2 import pass_eval_context
 import xarray as xr
 
 
@@ -102,23 +103,31 @@ class Octree:
 
         self.root = self.create_tree()
 
+    def __str__(self) -> str:
+        return f'Octree with {self.num_chunks_bottomlayer} chunks of maximum size {self.max_chunk_size}MB'
+
     def request_data(self, bounds,  chunk_budget=1, fit_bounds=False):
-        lat_min, lat_max = self.root.bounds[0][0], self.root.bounds[0][1]
-        lon_min, lon_max = self.root.bounds[1][0], self.root.bounds[1][1]
-        time_min, time_max = self.root.bounds[2][0], self.root.bounds[2][1]
+        lat_min, lat_max = bounds[0][0], bounds[0][1]
+        lon_min, lon_max = bounds[1][0], bounds[1][1]
+        time_min, time_max = bounds[2][0], bounds[2][1]
 
         cur_chunk = self.root
+        chunks = []
 
+
+        new_child = []
         while len(cur_chunk.children) > 0:
-            new_child = []
             for c in cur_chunk.children:
                 if self.overlapping_qubes(c.bounds, bounds):
                     new_child.append(c)
 
             if len(new_child) <= chunk_budget:
-                cur_chunk = new_child[0]
+                chunks = [i for i in new_child]
+                print(chunks)
+                cur_chunk = new_child.pop()
             else:
                 break
+        
 
         ds = cur_chunk.ds
         # reshape to requested coords
@@ -166,7 +175,7 @@ class Octree:
         return i+1
 
     def get_initial_dataset(self):
-        res = (self.root.ds, self.root.bounds)
+        res = (self.root.ds, self.root.bounds, self.root)
         return res
 
 

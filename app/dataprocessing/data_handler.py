@@ -25,38 +25,58 @@ class DataHandler:
 
         self.on_demand_data = False
 
-    
     def set_max_chunk_size(self, chunk_size):
         self.max_chunk_size = chunk_size
 
-
-    def set_opendap_cas(self, cas_url, ds_url, username=None, password=None, file_size=None):
+    def set_opendap_cas(self, cas_url, ds_url, username, password, file_size=None):
         self.on_demand_data = True
-
-        if username is None or password is None:
-            load_dotenv()
-
-            username = os.environ.get('USERNAME')
-            password = os.environ.get('PASSWORD')
 
         if username == None or password == None:
             print('please save credentials to .env')
 
         self.data_source = OpendapAccessCAS(
-            username, password, cas_url, ds_url, file_size=file_size)
+            username, password, ds_url, cas_url, file_size_MB=file_size)
 
         self.ds = self.data_source.get_dataset()
         self.data_structure = self.__set_data_structure()
-    
+
     def get_data_as_netcfd(self, bounds):
         ds, bounds, node = self.data_structure.request_data(bounds)
 
-        file_name = 'data_' + str(time.time()) + '.nc' # TODO: revisit. 
+        file_name = 'data_' + str(time.time()) + '.nc'  # TODO: revisit.
+
+        ds.to_netcdf(file_name)
+
+        if self.on_demand_data:
+            self.__node_stream_to_local_src(node, file_name)
+
+        return file_name
+
+    def get_inital_netcdf(self):
+        ds, bounds, node = self.data_structure.get_initial_dataset()
+
+        file_name = 'data_' + str(time.time()) + '.nc'  # TODO: revisit.
+
+        ds.to_netcdf(file_name)
         
         if self.on_demand_data:
             self.__node_stream_to_local_src(node, file_name)
 
-        return ds.to_netcdf(file_name)
+
+        return file_name
+    
+    def request_data_netcdf(self, bounds):
+        ds, bounds, node = self.data_structure.request_data(bounds, fit_bounds=True, chunk_budget=2)
+
+        file_name = 'data_' + str(time.time()) + '.nc'  # TODO: revisit.
+
+        ds.to_netcdf(file_name)
+        
+        if self.on_demand_data:
+            self.__node_stream_to_local_src(node, file_name)
+
+
+        return file_name
 
     def __node_stream_to_local_src(self, node, file_path):
         node.ds = xr.open_dataset(file_path)
@@ -64,9 +84,9 @@ class DataHandler:
     def __set_data_structure(self):
         ds_dims = self.__get_num_dimensions()
         if ds_dims == 2:
-            return QuadTree(self.ds, self.data_structure.get_file_size(), self.max_chunk_size)
+            return QuadTree(self.ds, self.data_source.get_file_size_MB(), self.max_chunk_size)
         if ds_dims == 3:
-            return Octree(self.ds, self.data_structure.get_file_size(), self.max_chunk_size)
+            return Octree(self.ds, self.data_source.get_file_size_MB(), self.max_chunk_size)
         else:
             raise Exception('DataHandler: unsupported number of dimensions')
 
