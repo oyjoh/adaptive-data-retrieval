@@ -6,6 +6,7 @@ import xarray as xr
 class Cube:
     def __init__(self, dataset, point_budget, cur_depth, max_depth):
         self.ds = dataset
+        self.o_dims = self.get_dims()
         self.point_budget = point_budget
         self.cur_depth = cur_depth
         self.max_depth = max_depth
@@ -15,12 +16,11 @@ class Cube:
         if self.cur_depth != max_depth:
             self.split()
 
-        stride_value = self.get_stride_value()
-
+        self.stride_value = self.get_stride_value()
         self.ds = self.ds.isel(
-            lat=slice(None, None, stride_value),
-            lon=slice(None, None, stride_value),
-            time=slice(None, None, stride_value),
+            lat=slice(None, None, self.stride_value),
+            lon=slice(None, None, self.stride_value),
+            time=slice(None, None, self.stride_value),
         )
 
         # ((lat_min, lat_max), (lon_min, lon_max), (time_min, time_max))
@@ -222,6 +222,12 @@ class Octree:
         return reduce(
             (lambda x, y: x * y),
             [self.dataset.sizes.mapping[k] for k in self.dataset.sizes.mapping],
+        )
+
+    def get_num_indices_ds(self, ds):
+        return reduce(
+            (lambda x, y: x * y),
+            [ds.sizes.mapping[k] for k in ds.sizes.mapping],
         )
 
     def get_num_layers(self) -> int:
