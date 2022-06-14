@@ -20,7 +20,9 @@ class Timer:
 
 class Plot:
     @staticmethod
-    def netcdf_color_contour(data_variable, ds=None, netcdf_file=None):
+    def netcdf_color_contour(
+        data_variable, ds=None, netcdf_file=None, aspect_ratio=None
+    ):
         """
         Plot a contour plot of a netcdf file for selected data variable.
         Every dimesion except for lat,lon will plot at index 0
@@ -30,8 +32,13 @@ class Plot:
             ds = xr.open_dataset(netcdf_file)
 
         ds[data_variable].isel(
-            {x: 0 for x in ds.dims if x not in ["lat", "lon"]}
+            {x: 0 for x in ds.dims if x not in ["lat", "lon", "latitude", "longitude"]}
         ).plot()
+
+        if aspect_ratio is not None:
+            ax = plt.gca()
+            ax.set_aspect(aspect_ratio)
+
         plt.show()
 
     @staticmethod

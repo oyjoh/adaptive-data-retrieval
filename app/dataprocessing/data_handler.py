@@ -2,8 +2,10 @@ import os
 import time
 
 import xarray as xr
+from app.dataprocessing.local.local_reader import LocalReader
 from app.dataprocessing.remote.opendap_access_cas import OpendapAccessCAS
 from app.datastructures.datastructure_interface import IDatastructure
+from app.datastructures.n_dimensional.kd_tree import KDTree
 from app.datastructures.three_dimensional.octree import Octree
 from app.datastructures.two_dimensional.quad_tree import QuadTree
 from dotenv import load_dotenv
@@ -25,8 +27,13 @@ class DataHandler:
 
         self.on_demand_data = False
 
+        self.custom_rules = None
+
     def set_max_chunk_size(self, chunk_size):
         self.max_chunk_size = chunk_size
+
+    def set_custom_rules(self, custom_rules):
+        self.custom_rules = custom_rules
 
     def set_opendap_cas(self, cas_url, ds_url, username, password, file_size=None):
         self.on_demand_data = True
@@ -37,6 +44,12 @@ class DataHandler:
         self.data_source = OpendapAccessCAS(
             username, password, ds_url, cas_url, file_size_MB=file_size
         )
+
+        self.ds = self.data_source.get_dataset()
+        self.data_structure = self.__set_data_structure()
+
+    def set_local_netcdf_reader(self, file_path):
+        self.data_source = LocalReader(file_path)
 
         self.ds = self.data_source.get_dataset()
         self.data_structure = self.__set_data_structure()
@@ -58,7 +71,7 @@ class DataHandler:
             bounds, fit_bounds=fit_bounds
         )
 
-        file_name = "data_" + str(time.time()) + ".nc"  # TODO: revisit.
+        file_name = "data_" + str(time.time())[-5:] + ".nc"  # TODO: revisit.
 
         ds.to_netcdf(file_name)
 
@@ -79,9 +92,16 @@ class DataHandler:
             return QuadTree(
                 self.ds, self.data_source.get_file_size_MB(), self.max_chunk_size
             )
-        if ds_dims == 3:
+        elif ds_dims == 3:
             return Octree(
                 self.ds, self.data_source.get_file_size_MB(), self.max_chunk_size
+            )
+        elif ds_dims > 3:
+            return KDTree(
+                ds=self.ds,
+                full_file_size=self.data_source.get_file_size_MB(),
+                max_chunk_size=self.max_chunk_size,
+                custom_rules=self.custom_rules,
             )
         else:
             raise Exception("DataHandler: unsupported number of dimensions")
