@@ -73,3 +73,14 @@ def get_file_size_MB(file_path):
     file_size_MB = file_size_bytes / (1024 * 1024)
 
     return file_size_MB
+
+
+def plt_img(arr, vmin, vmax):
+    # plt.imsave(f'dashboard_render{id}.png', arr=ds, origin='lower')
+    # file_name = "data_" + str(time.time())[-5:] + ".nc"  # TODO: revisit.
+
+    file_name = "img_" + str(time.time())[-5:] + ".png"
+
+    plt.imsave(fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax)
+
+    return file_name

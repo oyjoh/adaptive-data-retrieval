@@ -5,6 +5,10 @@
 ### Local Credentials
 .env
 
+### Generated images
+*.svg
+*.png
+
 ### NetCDF files
 *.nc
 

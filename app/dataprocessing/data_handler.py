@@ -2,6 +2,7 @@ import os
 import time
 
 import xarray as xr
+from app.dataprocessing.benchmark import Timer
 from app.dataprocessing.local.local_reader import LocalReader
 from app.dataprocessing.remote.opendap_access_cas import OpendapAccessCAS
 from app.datastructures.datastructure_interface import IDatastructure
@@ -51,8 +52,10 @@ class DataHandler:
     def set_local_netcdf_reader(self, file_path):
         self.data_source = LocalReader(file_path)
 
-        self.ds = self.data_source.get_dataset()
-        self.data_structure = self.__set_data_structure()
+        with Timer("Loading dataset"):
+            self.ds = self.data_source.get_dataset()
+        with Timer("Creating data structure"):
+            self.data_structure = self.__set_data_structure()
 
     def get_inital_netcdf(self):
         ds, bounds, node = self.data_structure.get_initial_dataset()
@@ -65,6 +68,10 @@ class DataHandler:
             self.__node_stream_to_local_src(node, file_name)
 
         return file_name
+
+    def get_initial_ds(self):
+        ds, bounds, node = self.data_structure.get_initial_dataset()
+        return ds
 
     def request_data_netcdf(self, bounds, return_xr_chunk=False, fit_bounds=False):
         ds, bounds, node = self.data_structure.request_data_single_chunk(
@@ -79,7 +86,7 @@ class DataHandler:
             self.__node_stream_to_local_src(node, file_name)
 
         if return_xr_chunk:
-            return file_name, node
+            return file_name, bounds, node
         else:
             return file_name
 

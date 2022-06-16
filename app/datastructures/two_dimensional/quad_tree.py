@@ -129,6 +129,32 @@ class QuadTree:
 
         return True
 
+    def request_data_single_chunk(self, bounds, fit_bounds=False):
+        lat_min, lat_max = bounds[0]
+        lon_min, lon_max = bounds[1]
+
+        cur_chunk = self.root
+
+        if not self.overlapping_bounds(cur_chunk.bounds, bounds):
+            raise Exception("Requested data is not overlapping with any chunk")
+
+        while len(cur_chunk.children) > 0:
+            overlapping_children = []
+
+            for c in cur_chunk.children:
+                if self.overlapping_bounds(c.bounds, bounds):
+                    overlapping_children.append(c)
+
+            if len(overlapping_children) == 1:
+                cur_chunk = overlapping_children[0]
+            else:
+                break
+
+        if fit_bounds:
+            pass
+
+        return (cur_chunk.ds, cur_chunk.bounds, cur_chunk)
+
     def request_data_m_c(self, bounds, fit_bounds=False):
         print("START REQUEST")
         # TODO: Revisit
