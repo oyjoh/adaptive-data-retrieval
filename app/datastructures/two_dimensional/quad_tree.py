@@ -38,10 +38,12 @@ class Chunk:
 
         stride_value = get_stride_value(self.ds, point_budget)
 
+        full_res = get_num_indices(self.ds)
         self.ds = self.ds.isel(
             lon=slice(None, None, stride_value), lat=slice(None, None, stride_value)
         )
-
+        low_res = get_num_indices(self.ds)
+        self.resolution = low_res / full_res
         # ((lat_min, lat_max), (lon_min, lon_max))
         self.bounds = get_bounds(self.ds)
 
@@ -108,6 +110,9 @@ class QuadTree:
             cur_size = self.original_file_size / 4**i
 
         return i + 1
+
+    def get_node_resolution(self, chunk):
+        return chunk.resolution
 
     """
         def get_num_layers(self) -> int:

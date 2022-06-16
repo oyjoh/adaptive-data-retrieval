@@ -71,7 +71,7 @@ class DataHandler:
 
     def get_initial_ds(self):
         ds, bounds, node = self.data_structure.get_initial_dataset()
-        return ds
+        return ds, bounds, node
 
     def request_data_netcdf(self, bounds, return_xr_chunk=False, fit_bounds=False):
         ds, bounds, node = self.data_structure.request_data_single_chunk(
@@ -89,6 +89,12 @@ class DataHandler:
             return file_name, bounds, node
         else:
             return file_name
+
+    def get_file_size_MB(self, file_path):
+        return os.path.getsize(file_path) / (1024 * 1024)
+
+    def get_node_resolution(self, node):
+        return self.data_structure.get_node_resolution(node) * 100
 
     def __node_stream_to_local_src(self, node, file_path):
         node.ds = xr.open_dataset(file_path)
