@@ -17,18 +17,20 @@ class Timer:
         self.end = time.perf_counter()
         print(f"Finished '{self.description}' in {self.end - self.start:0.4f} seconds")
 
+
 class Stopwatch:
     def __init__(self):
-        self.description = 'Task'
+        self.description = "Task"
         self.start_time = None
 
-    def start(self, description='Task'):
+    def start(self, description="Task"):
         self.description = description
         self.start_time = time.perf_counter()
-    
+
     def stop(self):
         self.end = time.perf_counter()
-        return f'{self.description} took {self.end - self.start_time:0.4f} seconds'
+        return f"{self.description} took {self.end - self.start_time:0.4f} seconds"
+
 
 class Plot:
     @staticmethod
@@ -54,9 +56,7 @@ class Plot:
         plt.show()
 
     @staticmethod
-    def netcdf_color_contour_multi_time(
-        data_variable, time, ds=None, netcdf_file=None
-    ):
+    def netcdf_color_contour_multi_time(data_variable, time, ds=None, netcdf_file=None):
 
         if netcdf_file is not None:
             ds = xr.open_dataset(netcdf_file)
