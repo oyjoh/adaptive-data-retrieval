@@ -5,7 +5,7 @@ import xarray as xr
 from app.dataprocessing.benchmark import Timer
 from app.dataprocessing.local.local_reader import LocalReader
 from app.dataprocessing.remote.opendap_access_cas import OpendapAccessCAS
-from app.datastructures.datastructure_interface import IDatastructure
+from app.datastructures.datastructure_interface import IStructure
 from app.datastructures.n_dimensional.kd_tree import KDTree
 from app.datastructures.three_dimensional.octree import Octree
 from app.datastructures.two_dimensional.quad_tree import QuadTree
@@ -22,7 +22,7 @@ class DataHandler:
 
         self.data_source = None
 
-        self.data_structure: IDatastructure = None
+        self.data_structure: IStructure = None
 
         self.max_chunk_size = 50
 

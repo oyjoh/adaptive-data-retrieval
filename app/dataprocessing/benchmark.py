@@ -96,3 +96,17 @@ def plt_img(arr, vmin, vmax):
     plt.imsave(fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax)
 
     return file_name
+
+
+def save_simple_img(ds, data_variable, vmin, vmax, img_format="png"):
+    """
+    Save a simple 2D, spatial image of the data variable with every other dimension set to 0.
+    """
+    args = {x: 0 for x in ds.dims if x not in ["lat", "lon", "latitude", "longitude"]}
+    arr = ds[data_variable].isel(args)
+
+    file_name = "img_" + str(time.time())[-5:] + "." + img_format
+
+    plt.imsave(fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax)
+
+    return file_name
