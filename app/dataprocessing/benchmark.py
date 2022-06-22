@@ -91,7 +91,7 @@ def plt_img(arr, vmin, vmax):
     # plt.imsave(f'dashboard_render{id}.png', arr=ds, origin='lower')
     # file_name = "data_" + str(time.time())[-5:] + ".nc"  # TODO: revisit.
 
-    file_name = "img_" + str(time.time())[-5:] + ".png"
+    file_name = "tmp/img/img_" + str(time.time())[-5:] + ".png"
 
     plt.imsave(fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax)
 
@@ -105,7 +105,7 @@ def save_simple_img(ds, data_variable, vmin, vmax, img_format="png"):
     args = {x: 0 for x in ds.dims if x not in ["lat", "lon", "latitude", "longitude"]}
     arr = ds[data_variable].isel(args)
 
-    file_name = "img_" + str(time.time())[-5:] + "." + img_format
+    file_name = "tmp/img/img_" + str(time.time())[-5:] + "." + img_format
 
     plt.imsave(fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax)
 

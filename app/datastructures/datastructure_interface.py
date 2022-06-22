@@ -5,6 +5,10 @@ from tokenize import Number
 import xarray as xr
 
 
+class INode(ABC):
+    pass
+
+
 class IStructure(ABC):
     @abstractmethod
     def request_data_single_chunk(self, bounds):
@@ -17,10 +21,6 @@ class IStructure(ABC):
     @abstractmethod
     def get_initial_dataset(self):
         pass
-
-
-class INode(ABC):
-    pass
 
 
 def get_num_indices_ds(ds: xr.Dataset) -> int:
@@ -43,3 +43,29 @@ def get_geo_bounds(ds: xr.Dataset) -> dict[str, float]:
 
 def get_bounds(ds: xr.Dataset) -> dict:
     return {d: (ds[d].values.min(), ds[d].values.max()) for d in ds.dims}
+
+
+def get_ipyleaflet_bounds(
+    ds: xr.Dataset,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    geo_bounds = get_geo_bounds(ds)
+    if "lat" in geo_bounds:
+        lat_min, lat_max = geo_bounds["lat"]
+    elif "latitude" in geo_bounds:
+        lat_min, lat_max = geo_bounds["latitude"]
+    if "lon" in geo_bounds:
+        lon_min, lon_max = geo_bounds["lon"]
+    elif "longitude" in geo_bounds:
+        lon_min, lon_max = geo_bounds["longitude"]
+
+    return ((lat_min, lon_min), (lat_max, lon_max))
+
+
+def spatial_resolution(ds: xr.Dataset) -> str:
+    for d in ds.dims:
+        if d == "lat" or d == "latitude":
+            lat = float(ds[d][1]) - float(ds[d][0])
+        if d == "lon" or d == "longitude":
+            lon = float(ds[d][1]) - float(ds[d][0])
+
+    return f"{lat:.10f} * {lon:.10f}"

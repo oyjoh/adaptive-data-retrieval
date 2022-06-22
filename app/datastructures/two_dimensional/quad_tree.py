@@ -4,10 +4,11 @@ from unicodedata import name
 
 import matplotlib.pyplot as plt
 import xarray as xr
+from app.datastructures.datastructure_interface import INode, IStructure
 from sympy import Eq, ceiling, solve, symbols
 
 
-class Chunk:
+class Chunk(INode):
     def __init__(self, dataset, layer, tree_depth, point_budget):
         self.ds = dataset
         self.point_budget = point_budget
@@ -39,9 +40,15 @@ class Chunk:
         stride_value = get_stride_value(self.ds, point_budget)
 
         full_res = get_num_indices(self.ds)
-        self.ds = self.ds.isel(
-            lon=slice(None, None, stride_value), lat=slice(None, None, stride_value)
-        )
+        if "lon" in self.ds.dims:
+            self.ds = self.ds.isel(
+                lon=slice(None, None, stride_value), lat=slice(None, None, stride_value)
+            )
+        else:
+            self.ds = self.ds.isel(
+                longitude=slice(None, None, stride_value),
+                latitude=slice(None, None, stride_value),
+            )
         low_res = get_num_indices(self.ds)
         self.resolution = low_res / full_res
         # ((lat_min, lat_max), (lon_min, lon_max))
@@ -51,13 +58,30 @@ class Chunk:
         # TODO: define x and y axis
         # TODO: veryfy split without loss, e.g. write tests
 
-        mid_x_idx = self.ds.dims["lon"] // 2
-        mid_y_idx = self.ds.dims["lat"] // 2
+        x_ax = "lon" if "lon" in self.ds.dims else "longitude"
+        y_ax = "lat" if "lat" in self.ds.dims else "latitude"
 
-        c_1 = self.ds.isel(lat=slice(mid_y_idx, None), lon=slice(None, mid_x_idx))
-        c_2 = self.ds.isel(lat=slice(mid_y_idx, None), lon=slice(mid_x_idx, None))
-        c_3 = self.ds.isel(lat=slice(None, mid_y_idx), lon=slice(None, mid_x_idx))
-        c_4 = self.ds.isel(lat=slice(None, mid_y_idx), lon=slice(mid_x_idx, None))
+        mid_x_idx = self.ds.dims[x_ax] // 2
+        mid_y_idx = self.ds.dims[y_ax] // 2
+
+        if x_ax == "lon":
+            c_1 = self.ds.isel(lat=slice(mid_y_idx, None), lon=slice(None, mid_x_idx))
+            c_2 = self.ds.isel(lat=slice(mid_y_idx, None), lon=slice(mid_x_idx, None))
+            c_3 = self.ds.isel(lat=slice(None, mid_y_idx), lon=slice(None, mid_x_idx))
+            c_4 = self.ds.isel(lat=slice(None, mid_y_idx), lon=slice(mid_x_idx, None))
+        else:
+            c_1 = self.ds.isel(
+                latitude=slice(mid_y_idx, None), longitude=slice(None, mid_x_idx)
+            )
+            c_2 = self.ds.isel(
+                latitude=slice(mid_y_idx, None), longitude=slice(mid_x_idx, None)
+            )
+            c_3 = self.ds.isel(
+                latitude=slice(None, mid_y_idx), longitude=slice(None, mid_x_idx)
+            )
+            c_4 = self.ds.isel(
+                latitude=slice(None, mid_y_idx), longitude=slice(mid_x_idx, None)
+            )
 
         self.upper_left = Chunk(c_1, self.layer + 1, self.tree_depth, self.point_budget)
         self.upper_right = Chunk(
@@ -72,7 +96,7 @@ class Chunk:
         self.ds.to_netcdf(f"{name}.nc")
 
 
-class QuadTree:
+class QuadTree(IStructure):
     def __init__(self, dataset, original_file_size, max_chunk_size):
         self.ds = dataset
 
@@ -93,7 +117,7 @@ class QuadTree:
         self.root = self.create_tree()
 
     def __str__(self) -> str:
-        return f"QuadTree with {self.num_chunks_bottomlayer} chunks at lowest level of max chunk size {self.max_chunk_size}"
+        return f"QuadTree with {self.num_chunks_bottomlayer} chunks at lowest level of max chunk size {self.max_chunk_size}MB"
 
     def create_tree(self):
         return Chunk(self.ds, 1, self.num_layers, self.point_budget)
@@ -159,6 +183,9 @@ class QuadTree:
             pass
 
         return (cur_chunk.ds, cur_chunk.bounds, cur_chunk)
+
+    def request_data_n_chunks(self, bounds, n_chunks):
+        pass
 
     def request_data_m_c(self, bounds, fit_bounds=False):
         print("START REQUEST")
@@ -280,30 +307,3 @@ def get_stride_value(dataset, point_budget) -> int:
     eq1 = Eq(((x / z) * (y / z)), point_budget)
     sol = ceiling(max(solve(eq1)))
     return sol
-
-
-def debug():
-    ds = xr.open_dataset("app/externalresources/datasets/GEBCO_2021.nc")
-    tree = QuadTree(max_chunk_size=50, original_file_size=7470, dataset=ds)
-
-    i_set, _ = tree.request_data(bounds=((-90, -180), (90, 180)))
-    print(i_set)
-    i_set.to_netcdf("bench.nc")
-    # tree.get_initial_dataset().to_netcdf('ii.nc')
-    # tree.request_data(((-89, 89), (-179, 179))).to_netcdf('rr.nc')
-
-    # kaland = ((60.2595314, 60.282916), (5.3682603, 5.4547547))
-    # tree.request_data(kaland, fit_bounds=True).to_netcdf('kaland_quad.nc')
-
-    # ul = ((0, 90), (0,180))
-    # subset = tree.request_data(ul)
-    # d_arr = subset['elevation']
-    # print('start plot')
-    # d_arr.isel().plot()
-    # plt.imsave('test.png', arr=d_arr, origin='lower')
-    # plt.savefig('res.png')
-    # print('end plot')
-
-
-if __name__ == "__main__":
-    debug()

@@ -36,14 +36,21 @@ class DataHandler:
     def set_custom_rules(self, custom_rules):
         self.custom_rules = custom_rules
 
-    def set_opendap_cas(self, cas_url, ds_url, username, password, file_size=None):
+    def set_opendap_cas(
+        self, cas_url, ds_url, username, password, file_size=None, constraints=None
+    ):
         self.on_demand_data = True
 
         if username == None or password == None:
             print("please save credentials to .env")
 
         self.data_source = OpendapAccessCAS(
-            username, password, ds_url, cas_url, file_size_MB=file_size
+            username,
+            password,
+            ds_url,
+            cas_url,
+            file_size_MB=file_size,
+            constraints=constraints,
         )
 
         self.ds = self.data_source.get_dataset()
@@ -60,7 +67,7 @@ class DataHandler:
     def get_inital_netcdf(self):
         ds, bounds, node = self.data_structure.get_initial_dataset()
 
-        file_name = "data_" + str(time.time()) + ".nc"  # TODO: revisit.
+        file_name = "tmp/nc/data_" + str(time.time()) + ".nc"  # TODO: revisit.
 
         ds.to_netcdf(file_name)
 
@@ -78,7 +85,7 @@ class DataHandler:
             bounds, fit_bounds=fit_bounds
         )
 
-        file_name = "data_" + str(time.time())[-5:] + ".nc"  # TODO: revisit.
+        file_name = "tmp/nc/data_" + str(time.time())[-5:] + ".nc"  # TODO: revisit.
 
         ds.to_netcdf(file_name)
 
@@ -95,6 +102,9 @@ class DataHandler:
 
     def get_node_resolution(self, node):
         return self.data_structure.get_node_resolution(node) * 100
+
+    def get_node_spatial_resolution(self, node) -> dict:
+        return self.data_structure.get_node_spatial_resolution(node)
 
     def __node_stream_to_local_src(self, node, file_path):
         node.ds = xr.open_dataset(file_path)

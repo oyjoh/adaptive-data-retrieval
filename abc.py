@@ -9,8 +9,14 @@ class AbstractClassExample(ABC):
     def do_shit(self):
         print("is work?")
 
+    def tester(self):
+        print(self.km)
+
 
 class ConcreteClassExample(AbstractClassExample):
+    def __init__(self, km) -> None:
+        self.km = km
+
     def jalla(self):
         print("jalla")
 
@@ -19,10 +25,9 @@ class ConcreteClassExample(AbstractClassExample):
 
 
 def main():
-    concrete = ConcreteClassExample()
-    concrete.jalla()
-    concrete.do_something()
-    concrete.do_shit()
+    lolo = AbstractClassExample()
+    concrete = ConcreteClassExample("hohohoh")
+    concrete.tester()
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ class OpendapAccessCAS:
         dataset_url,
         cas_url="https://cmems-cas.cls.fr/cas/login",
         file_size_MB=None,
+        constraints=None,
     ):
         self.username = username
         self.password = password
@@ -36,6 +37,9 @@ class OpendapAccessCAS:
         self.cas_url = cas_url
 
         self.ds: xr.Dataset = self.copernicusmarine_datastore()
+
+        if constraints is not None:
+            self.ds = self.ds.isel(constraints)
 
         self.file_size_MB = (
             self.estimate_file_size() if file_size_MB is None else file_size_MB
