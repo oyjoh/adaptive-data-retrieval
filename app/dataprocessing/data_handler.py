@@ -106,6 +106,9 @@ class DataHandler:
     def get_node_spatial_resolution(self, node) -> dict:
         return self.data_structure.get_node_spatial_resolution(node)
 
+    def get_full_xr_ds(self) -> xr.Dataset:
+        return self.data_structure.ds
+
     def __node_stream_to_local_src(self, node, file_path):
         node.ds = xr.open_dataset(file_path)
 
