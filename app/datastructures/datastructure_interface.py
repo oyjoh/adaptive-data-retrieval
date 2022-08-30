@@ -48,6 +48,9 @@ def get_bounds(ds: xr.Dataset) -> dict:
 def get_ipyleaflet_bounds(
     ds: xr.Dataset,
 ) -> tuple[tuple[float, float], tuple[float, float]]:
+    """
+    (SW, NE)
+    """
     geo_bounds = get_geo_bounds(ds)
     if "lat" in geo_bounds:
         lat_min, lat_max = geo_bounds["lat"]

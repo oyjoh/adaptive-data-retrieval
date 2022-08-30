@@ -1,15 +1,29 @@
+import datetime
 import os
 import time
 
 import xarray as xr
 from app.dataprocessing.benchmark import Timer
+from app.dataprocessing.datasource_interface import IDatasource
 from app.dataprocessing.local.local_reader import LocalReader
 from app.dataprocessing.remote.opendap_access_cas import OpendapAccessCAS
-from app.datastructures.datastructure_interface import IStructure
+from app.datastructures.datastructure_interface import INode, IStructure, get_bounds
 from app.datastructures.n_dimensional.kd_tree import KDTree
 from app.datastructures.three_dimensional.octree import Octree
 from app.datastructures.two_dimensional.quad_tree import QuadTree
 from dotenv import load_dotenv
+from sympy import im
+
+
+class CachedDS:
+    def __init__(self, node: INode):
+        self.ds = node.ds
+        self.bounds = get_bounds(node.ds)
+        self.time_stamp = datetime.datetime.now()
+        self.resolution = node.resolution
+
+    def __str__(self) -> str:
+        return f"\tBounds:{self.bounds}\n\tCreated:{self.time_stamp}\n\tResolution:{self.resolution:.2f}"
 
 
 class DataHandler:
@@ -20,7 +34,7 @@ class DataHandler:
     def __init__(self) -> None:
         self.ds = None  # xarray.Dataset
 
-        self.data_source = None
+        self.data_source: IDatasource = None
 
         self.data_structure: IStructure = None
 
@@ -30,14 +44,26 @@ class DataHandler:
 
         self.custom_rules = None
 
+        self.cache: list[CachedDS] = []
+
     def set_max_chunk_size(self, chunk_size):
         self.max_chunk_size = chunk_size
+
+    def get_cache(self):
+        return self.cache
 
     def set_custom_rules(self, custom_rules):
         self.custom_rules = custom_rules
 
     def set_opendap_cas(
-        self, cas_url, ds_url, username, password, file_size=None, constraints=None
+        self,
+        cas_url,
+        ds_url,
+        username,
+        password,
+        file_size=None,
+        constraints=None,
+        struct=None,
     ):
         self.on_demand_data = True
 
@@ -54,15 +80,16 @@ class DataHandler:
         )
 
         self.ds = self.data_source.get_dataset()
-        self.data_structure = self.__set_data_structure()
+        with Timer("Creating data structure"):
+            self.data_structure = self.__set_data_structure(struct)
 
-    def set_local_netcdf_reader(self, file_path):
-        self.data_source = LocalReader(file_path)
+    def set_local_netcdf_reader(self, file_path, constraints=None, struct=None):
+        self.data_source = LocalReader(file_path, constraints)
 
         with Timer("Loading dataset"):
             self.ds = self.data_source.get_dataset()
         with Timer("Creating data structure"):
-            self.data_structure = self.__set_data_structure()
+            self.data_structure = self.__set_data_structure(struct)
 
     def get_inital_netcdf(self):
         ds, bounds, node = self.data_structure.get_initial_dataset()
@@ -78,6 +105,7 @@ class DataHandler:
 
     def get_initial_ds(self):
         ds, bounds, node = self.data_structure.get_initial_dataset()
+
         return ds, bounds, node
 
     def request_data_netcdf(self, bounds, return_xr_chunk=False, fit_bounds=False):
@@ -110,9 +138,21 @@ class DataHandler:
         return self.data_structure.ds
 
     def __node_stream_to_local_src(self, node, file_path):
-        node.ds = xr.open_dataset(file_path)
+        # store cache in list
 
-    def __set_data_structure(self):
+        node.ds = xr.open_dataset(file_path)
+        self.cache.append(CachedDS(node))
+
+    def __set_data_structure(self, custom):
+        if custom:
+            if custom == "KDTree":
+                return KDTree(
+                    self.ds,
+                    full_file_size=self.data_source.get_file_size_MB(),
+                    max_chunk_size=self.max_chunk_size,
+                    custom_rules=self.custom_rules,
+                )
+
         ds_dims = self.__get_num_dimensions()
         if ds_dims == 2:
             return QuadTree(
@@ -124,7 +164,7 @@ class DataHandler:
             )
         elif ds_dims > 3:
             return KDTree(
-                ds=self.ds,
+                self.ds,
                 full_file_size=self.data_source.get_file_size_MB(),
                 max_chunk_size=self.max_chunk_size,
                 custom_rules=self.custom_rules,

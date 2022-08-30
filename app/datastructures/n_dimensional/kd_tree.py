@@ -1,4 +1,5 @@
 from functools import reduce
+from webbrowser import get
 
 import xarray as xr
 
@@ -42,9 +43,12 @@ class Node:
             self.split()
 
         # stride on ds to get to point budget
+        full_res = get_num_indices(self.ds)
         self.stride_value = self.get_stride_value()
         slice_ = {d: slice(None, None, self.stride_value) for d in self.ds.dims}
         self.ds = self.ds.isel(**slice_)
+        low_res = get_num_indices(self.ds)
+        self.resolution = low_res / full_res
 
     def split(self):
         """
@@ -150,10 +154,19 @@ class KDTree:
 
     def request_data_single_chunk(self, bounds, fit_bounds=False):
         # bounds = e.g. {'lat':(0,1), 'lon':(0,1), 'depth':(0,1)}
+        if type(bounds) is tuple:
+            lat_min, lat_max = bounds[0]
+            lon_min, lon_max = bounds[1]
+
+            bounds = {"lat": (lat_min, lat_max), "lon": (lon_min, lon_max)}
 
         cur_chunk = self.root
 
         while cur_chunk.left is not None and cur_chunk.right is not None:
+            # print(f"s dim: {cur_chunk.split_dim}")
+            # print(f"bnd {bounds}")
+            print(bounds)
+            print(cur_chunk.split_dim)
             if cur_chunk.split_dim in bounds:
                 if bounds[cur_chunk.split_dim][1] < cur_chunk.split_val:
                     cur_chunk = cur_chunk.left
@@ -161,11 +174,10 @@ class KDTree:
                     cur_chunk = cur_chunk.right
                 else:
                     break
-
-        return cur_chunk.ds, (), cur_chunk
+        return cur_chunk.ds, get_bounds(cur_chunk.ds), cur_chunk
 
     def get_initial_dataset(self):
-        return self.root.ds, (), self.root
+        return self.root.ds, get_bounds(self.root.ds), self.root
 
     def get_num_splits(self):
         i = 0
@@ -183,6 +195,28 @@ class KDTree:
             [self.ds.sizes.mapping[k] for k in self.ds.sizes.mapping],
         )
 
+    def get_node_resolution(self, node):
+        return node.resolution
 
-def get_bounds(ds):
-    pass
+
+def get_num_indices(dataset):
+    return reduce(
+        (lambda x, y: x * y), [dataset.sizes.mapping[k] for k in dataset.sizes.mapping]
+    )
+
+
+def get_bounds(dataset):
+    # ((lat_min, lat_max), (lon_min, lon_max))
+    lat = (None, None)
+    lon = (None, None)
+
+    for dim in dataset.dims:
+        d_min = dataset[dim].values[0]
+        d_max = dataset[dim].values[-1]
+
+        if dim in ["lat", "latitude"]:
+            lat = (d_min, d_max)
+        if dim in ["lon", "longitude"]:
+            lon = (d_min, d_max)
+
+    return (lat, lon)

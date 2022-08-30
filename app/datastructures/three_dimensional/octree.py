@@ -17,14 +17,25 @@ class Cube:
             self.split()
 
         self.stride_value = self.get_stride_value()
-        self.ds = self.ds.isel(
-            lat=slice(None, None, self.stride_value),
-            lon=slice(None, None, self.stride_value),
-            time=slice(None, None, self.stride_value),
-        )
+
+        full_res = get_num_indices(self.ds)
+        if "lon" in self.ds.dims:
+            self.ds = self.ds.isel(
+                lat=slice(None, None, self.stride_value),
+                lon=slice(None, None, self.stride_value),
+                time=slice(None, None, self.stride_value),
+            )
+        else:
+            self.ds = self.ds.isel(
+                latitude=slice(None, None, self.stride_value),
+                longitude=slice(None, None, self.stride_value),
+                time=slice(None, None, self.stride_value),
+            )
 
         # ((lat_min, lat_max), (lon_min, lon_max), (time_min, time_max))
         self.bounds = self.get_bounds()
+        low_res = get_num_indices(self.ds)
+        self.resolution = low_res / full_res
 
     def get_stride_value(self) -> int:
         """
@@ -50,50 +61,96 @@ class Cube:
         return tuple(dims[:3])
 
     def split(self):
-        mid_x_idx = self.ds.dims["lon"] // 2
-        mid_y_idx = self.ds.dims["lat"] // 2
-        mid_z_idx = self.ds.dims["time"] // 2
+        x_ax = "lon" if "lon" in self.ds.dims else "longitude"
+        y_ax = "lat" if "lat" in self.ds.dims else "latitude"
+        z_ax = "time" if "time" in self.ds.dims else "TIME"
 
-        c_1 = self.ds.isel(
-            lat=slice(mid_y_idx, None),
-            lon=slice(None, mid_x_idx),
-            time=slice(None, mid_z_idx),
-        )
-        c_2 = self.ds.isel(
-            lat=slice(mid_y_idx, None),
-            lon=slice(mid_x_idx, None),
-            time=slice(None, mid_z_idx),
-        )
-        c_3 = self.ds.isel(
-            lat=slice(None, mid_y_idx),
-            lon=slice(None, mid_x_idx),
-            time=slice(None, mid_z_idx),
-        )
-        c_4 = self.ds.isel(
-            lat=slice(None, mid_y_idx),
-            lon=slice(mid_x_idx, None),
-            time=slice(None, mid_z_idx),
-        )
-        c_5 = self.ds.isel(
-            lat=slice(None, mid_y_idx),
-            lon=slice(None, mid_x_idx),
-            time=slice(mid_z_idx, None),
-        )
-        c_6 = self.ds.isel(
-            lat=slice(None, mid_y_idx),
-            lon=slice(mid_x_idx, None),
-            time=slice(mid_z_idx, None),
-        )
-        c_7 = self.ds.isel(
-            lat=slice(mid_y_idx, None),
-            lon=slice(None, mid_x_idx),
-            time=slice(mid_z_idx, None),
-        )
-        c_8 = self.ds.isel(
-            lat=slice(mid_y_idx, None),
-            lon=slice(mid_x_idx, None),
-            time=slice(mid_z_idx, None),
-        )
+        mid_x_idx = self.ds.dims[x_ax] // 2
+        mid_y_idx = self.ds.dims[y_ax] // 2
+        mid_z_idx = self.ds.dims[z_ax] // 2
+
+        if x_ax == "lon":
+            c_1 = self.ds.isel(
+                lat=slice(mid_y_idx, None),
+                lon=slice(None, mid_x_idx),
+                time=slice(None, mid_z_idx),
+            )
+            c_2 = self.ds.isel(
+                lat=slice(mid_y_idx, None),
+                lon=slice(mid_x_idx, None),
+                time=slice(None, mid_z_idx),
+            )
+            c_3 = self.ds.isel(
+                lat=slice(None, mid_y_idx),
+                lon=slice(None, mid_x_idx),
+                time=slice(None, mid_z_idx),
+            )
+            c_4 = self.ds.isel(
+                lat=slice(None, mid_y_idx),
+                lon=slice(mid_x_idx, None),
+                time=slice(None, mid_z_idx),
+            )
+            c_5 = self.ds.isel(
+                lat=slice(None, mid_y_idx),
+                lon=slice(None, mid_x_idx),
+                time=slice(mid_z_idx, None),
+            )
+            c_6 = self.ds.isel(
+                lat=slice(None, mid_y_idx),
+                lon=slice(mid_x_idx, None),
+                time=slice(mid_z_idx, None),
+            )
+            c_7 = self.ds.isel(
+                lat=slice(mid_y_idx, None),
+                lon=slice(None, mid_x_idx),
+                time=slice(mid_z_idx, None),
+            )
+            c_8 = self.ds.isel(
+                lat=slice(mid_y_idx, None),
+                lon=slice(mid_x_idx, None),
+                time=slice(mid_z_idx, None),
+            )
+        else:
+            c_1 = self.ds.isel(
+                latitude=slice(mid_y_idx, None),
+                longitude=slice(None, mid_x_idx),
+                time=slice(None, mid_z_idx),
+            )
+            c_2 = self.ds.isel(
+                latitude=slice(mid_y_idx, None),
+                longitude=slice(mid_x_idx, None),
+                time=slice(None, mid_z_idx),
+            )
+            c_3 = self.ds.isel(
+                latitude=slice(None, mid_y_idx),
+                longitude=slice(None, mid_x_idx),
+                time=slice(None, mid_z_idx),
+            )
+            c_4 = self.ds.isel(
+                latitude=slice(None, mid_y_idx),
+                longitude=slice(mid_x_idx, None),
+                time=slice(None, mid_z_idx),
+            )
+            c_5 = self.ds.isel(
+                latitude=slice(None, mid_y_idx),
+                longitude=slice(None, mid_x_idx),
+                time=slice(mid_z_idx, None),
+            )
+            c_6 = self.ds.isel(
+                latitude=slice(None, mid_y_idx),
+                longitude=slice(mid_x_idx, None),
+                time=slice(mid_z_idx, None),
+            )
+            c_7 = self.ds.isel(
+                latitude=slice(mid_y_idx, None),
+                longitude=slice(None, mid_x_idx),
+                time=slice(mid_z_idx, None),
+            )
+            c_8 = self.ds.isel(
+                latitude=slice(mid_y_idx, None),
+                longitude=slice(mid_x_idx, None),
+                time=slice(mid_z_idx, None),
+            )
 
         self.children = [
             Cube(c, self.point_budget, self.cur_depth + 1, self.max_depth)
@@ -101,10 +158,14 @@ class Cube:
         ]
 
     def get_bounds(self):
-        lat_min, lat_max = self.ds.lat.min(), self.ds.lat.max()
-        lon_min, lon_max = self.ds.lon.min(), self.ds.lon.max()
-        time_min, time_max = self.ds.time.min(), self.ds.time.max()
-
+        if "lon" in self.ds.dims:
+            lat_min, lat_max = self.ds.lat.min(), self.ds.lat.max()
+            lon_min, lon_max = self.ds.lon.min(), self.ds.lon.max()
+            time_min, time_max = self.ds.time.min(), self.ds.time.max()
+        else:
+            lat_min, lat_max = self.ds.latitude.min(), self.ds.latitude.max()
+            lon_min, lon_max = self.ds.longitude.min(), self.ds.longitude.max()
+            time_min, time_max = self.ds.time.min(), self.ds.time.max()
         return ((lat_min, lat_max), (lon_min, lon_max), (time_min, time_max))
 
 
@@ -135,13 +196,15 @@ class Octree:
         cur_chunk = self.root
 
         if not self.overlapping_qubes(bounds, cur_chunk.bounds):
+            print(bounds)
+            print(cur_chunk.bounds)
             raise Exception("Invalid bounds")
 
         while len(cur_chunk.children) > 0:
             overlapping_children = []
 
             for c in cur_chunk.children:
-                if self.overlapping_qubes(c.bounds, bounds):
+                if self.overlapping_qubes(bounds, c.bounds):
                     overlapping_children.append(c)
 
             if len(overlapping_children) == 1:
@@ -158,6 +221,9 @@ class Octree:
             return (ds, get_bounds(ds), cur_chunk)
         else:
             return (cur_chunk.ds, cur_chunk.bounds, cur_chunk)
+
+    def get_node_resolution(self, cube):
+        return cube.resolution
 
     def request_data(self, bounds, chunk_budget=1, fit_bounds=False):
         lat_min, lat_max = bounds[0][0], bounds[0][1]
@@ -204,7 +270,7 @@ class Octree:
 
         lat_min_2, lat_max_2 = chunk_bounds[0][0], chunk_bounds[0][1]
         lon_min_2, lon_max_2 = chunk_bounds[1][0], chunk_bounds[1][1]
-        time_min_2, time_max_2 = chunk_bounds[2][0], chunk_bounds[2][1]
+        time_min_2, time_max_2 = chunk_bounds[2][0].values, chunk_bounds[2][1].values
 
         return (
             lat_min_1 <= lat_max_2
@@ -251,3 +317,9 @@ def get_bounds(ds):
     time_min, time_max = ds.time.min(), ds.time.max()
 
     return ((lat_min, lat_max), (lon_min, lon_max), (time_min, time_max))
+
+
+def get_num_indices(dataset):
+    return reduce(
+        (lambda x, y: x * y), [dataset.sizes.mapping[k] for k in dataset.sizes.mapping]
+    )

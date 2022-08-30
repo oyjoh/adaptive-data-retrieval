@@ -31,6 +31,10 @@ class Stopwatch:
         self.end = time.perf_counter()
         return f"{self.description} took {self.end - self.start_time:0.4f} seconds"
 
+    def alt_stop(self):
+        self.end = time.perf_counter()
+        return self.end - self.start_time
+
 
 class Plot:
     @staticmethod
@@ -94,6 +98,17 @@ def plt_img(arr, vmin, vmax):
     file_name = "tmp/img/img_" + str(time.time())[-5:] + ".png"
 
     plt.imsave(fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax)
+
+    return file_name
+
+
+def demo_plt_img(arr, vmin, vmax, file_name="noname.png"):
+    # plt.imsave(f'dashboard_render{id}.png', arr=ds, origin='lower')
+    # file_name = "data_" + str(time.time())[-5:] + ".nc"  # TODO: revisit.
+
+    plt.imsave(
+        fname=file_name, arr=arr, origin="lower", vmin=vmin, vmax=vmax, cmap="inferno"
+    )
 
     return file_name
 

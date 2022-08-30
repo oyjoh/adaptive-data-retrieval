@@ -2,6 +2,7 @@ import math
 import os
 
 import xarray as xr
+from app.dataprocessing.benchmark import Timer
 from dotenv import load_dotenv
 from pydap.cas.get_cookies import setup_session
 from pydap.client import open_url
@@ -36,7 +37,8 @@ class OpendapAccessCAS:
         self.dataset_url = dataset_url
         self.cas_url = cas_url
 
-        self.ds: xr.Dataset = self.copernicusmarine_datastore()
+        with Timer("Loading dataset"):
+            self.ds: xr.Dataset = self.copernicusmarine_datastore()
 
         if constraints is not None:
             self.ds = self.ds.isel(constraints)
